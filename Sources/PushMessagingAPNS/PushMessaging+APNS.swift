@@ -22,10 +22,6 @@ extension PushMessaging: PushMessagingAPNSInterface {
         PushMessagingAPNS.shared.application(application, didFailToRegisterForRemoteNotificationsWithError: error)
     }
     
-    func clearDeviceToken() {
-        PushMessagingAPNS.shared.clearDeviceToken()
-    }
-    
     #if canImport(UserNotifications)
     public func didReceive(_ request: UNNotificationRequest, withContentHandler contentHandler: @escaping (UNNotificationContent) -> Void) -> Bool {
         return PushMessagingAPNS.shared.didReceive(request, withContentHandler: contentHandler)

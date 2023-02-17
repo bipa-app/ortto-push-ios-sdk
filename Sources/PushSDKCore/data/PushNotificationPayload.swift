@@ -11,17 +11,19 @@ import UserNotifications
 #endif
 
 public struct ActionItem: Codable {
-    public let action: String
-    public let title: String
+    public let action: String?
+    public let title: String?
     public let link: String
 }
 
 public class PushNotificationPayload: Codable {
     
-    public var actions: [ActionItem] = []
+    var actions: [ActionItem] = []
+    var primaryAction: ActionItem?
     let title: String
     let body: String
     let image: String?
+    let eventTrackingUrl: String?
     let link: String?
     let notificationID: String
     
@@ -31,6 +33,8 @@ public class PushNotificationPayload: Codable {
           image: String,
           link: String,
           actions: [ActionItem],
+          primaryAction: ActionItem?,
+          eventTrackingUrl: String?,
           notificationID: String
     ) {
         self.title = title
@@ -38,6 +42,8 @@ public class PushNotificationPayload: Codable {
         self.image = image
         self.link = link
         self.actions = actions
+        self.primaryAction = primaryAction
+        self.eventTrackingUrl = eventTrackingUrl
         self.notificationID = notificationID
     }
     
@@ -47,6 +53,8 @@ public class PushNotificationPayload: Codable {
         case body = "body"
         case image = "image"
         case link = "link"
+        case primaryAction = "primary_action"
+        case eventTrackingUrl = "event_tracking_url"
         case notificationID = "ortto_notification_id"
     }
     
@@ -55,12 +63,25 @@ public class PushNotificationPayload: Codable {
         let actionsJson = content.userInfo["actions"] as? String
         let jsonData = actionsJson!.data(using: .utf8)!
         let actions: [ActionItem] = try! JSONDecoder().decode([ActionItem].self, from: jsonData)
+        
+        let link = content.userInfo["link"] as? String ?? ""
+        let image = content.userInfo["image"] as? String ?? ""
+        let eventTrackingUrl = content.userInfo["event_tracking_url"] as? String ?? nil
+        var primaryAction: ActionItem?
+        
+        if let primaryActionJson = content.userInfo["primary_action"] as? String {
+            let primaryActionJsonData = primaryActionJson.data(using: .utf8)!
+            primaryAction = try!JSONDecoder().decode(ActionItem.self, from: primaryActionJsonData)
+        }
+        
         let payload = PushNotificationPayload(
             title: content.userInfo["title"] as? String ?? content.title,
             body: content.userInfo["body"] as? String ?? content.body,
-            image: (content.userInfo["image"] as? String)!,
-            link: (content.userInfo["link"] as? String)!,
+            image: image,
+            link: link,
             actions: actions,
+            primaryAction: primaryAction,
+            eventTrackingUrl: eventTrackingUrl,
             notificationID: (content.userInfo["ortto_notification_id"] as? String)!
         )
         

@@ -6,6 +6,7 @@
 //
 
 import Foundation
+import Alamofire
 #if canImport(UserNotifications) && canImport(UIKit)
 import UIKit
 import UserNotifications
@@ -18,9 +19,7 @@ struct RegistrationRequestBody: Codable {
 
 // Used for rich push
 protocol MessagingServiceProtocol {
-    
-    func clearDeviceToken()
-    
+
     #if canImport(UserNotifications)
     @discardableResult
     func didReceive(
@@ -36,37 +35,13 @@ public class MessagingService: MessagingServiceProtocol {
     
     public private(set) static var shared = MessagingService()
     
-    internal var deviceManager: DeviceManager?
+    internal var deviceManager: ApiManager?
     
     init() {
     }
     
     public func registerDeviceToken(token: String, tokenType: String) {
-    
-        // Ensure the user ID is not empty
-        guard let id = Ortto.shared.identifier else {
-            Ortto.log().info("MessagingService@registerDeviceToken.fail id=empty")
-            return
-        }
-        
-        Ortto.log().debug("MessagingService@registerDeviceToken.debug token=\(token) type=\(tokenType)")
-            
-        Ortto.shared.deviceManager.registerDeviceToken(
-            user: id,
-            sessionID: Ortto.shared.prefsManager.sessionID,
-            deviceToken: token,
-            tokenType: tokenType
-        ) { (response: RegistrationResponse?) in
-            guard let sessionID = response?.sessionID else {
-                return
-            }
-            
-            Ortto.shared.prefsManager.setSessionID(sessionID)
-        }
-    }
-    
-    public func clearDeviceToken() {
-        deviceManager?.clearDeviceToken()
+        Ortto.shared.dispatchPushRequest(PushToken(value: token, type: tokenType))
     }
     
     #if canImport(UserNotifications)
@@ -79,17 +54,15 @@ public class MessagingService: MessagingServiceProtocol {
             return false
         }
 
-
         var userInfo: [String:String] = [:]
-
-        var myActionList: [UNNotificationAction] = [        ]
+        var myActionList: [UNNotificationAction] = []
         for action: ActionItem in pushPayload.actions {
             myActionList.append(UNNotificationAction(
-                identifier: action.action,
-                title: action.title,
+                identifier: action.action!,
+                title: action.title ?? "",
                 options: [.foreground]
             ))
-            userInfo[action.action] = action.link
+            userInfo[action.action!] = action.link
         }
 
         // Define the notification type
@@ -100,6 +73,10 @@ public class MessagingService: MessagingServiceProtocol {
             options: [.customDismissAction]
         )
         
+        if let primaryAction = pushPayload.primaryAction {
+            userInfo[UNNotificationDefaultActionIdentifier] = primaryAction.link
+        }
+        
         let content = UNMutableNotificationContent()
         content.title = pushPayload.title
         content.body = pushPayload.body
@@ -107,6 +84,7 @@ public class MessagingService: MessagingServiceProtocol {
         content.userInfo = userInfo
         content.categoryIdentifier = request.content.categoryIdentifier
 
+        sendTrackingEventRequest(pushPayload.eventTrackingUrl)
         
         getMediaAttachment(for: pushPayload.image!) { [weak self] image in
             guard
@@ -114,9 +92,9 @@ public class MessagingService: MessagingServiceProtocol {
                 let image = image,
                 let fileURL = self.saveImageAttachment(
                     image: image,
-                    forIdentifier: "attachment.png")
-            else {
-                print("nah dog")
+                    forIdentifier: "attachment.png"
+                ) else {
+                Ortto.log().debug("MessagingService@didReceive.image.fail message=no-image")
                 return
             }
             
@@ -139,34 +117,34 @@ public class MessagingService: MessagingServiceProtocol {
         return true
     }
         
-        private func saveImageAttachment(
-          image: UIImage,
-          forIdentifier identifier: String
-        ) -> URL? {
+    private func saveImageAttachment(
+      image: UIImage,
+      forIdentifier identifier: String
+    ) -> URL? {
 
-          let tempDirectory = URL(fileURLWithPath: NSTemporaryDirectory())
-          let directoryPath = tempDirectory.appendingPathComponent(
-            ProcessInfo.processInfo.globallyUniqueString,
-            isDirectory: true)
+      let tempDirectory = URL(fileURLWithPath: NSTemporaryDirectory())
+      let directoryPath = tempDirectory.appendingPathComponent(
+        ProcessInfo.processInfo.globallyUniqueString,
+        isDirectory: true)
 
-          do {
-            try FileManager.default.createDirectory(
-              at: directoryPath,
-              withIntermediateDirectories: true,
-              attributes: nil)
+      do {
+        try FileManager.default.createDirectory(
+          at: directoryPath,
+          withIntermediateDirectories: true,
+          attributes: nil)
 
-            let fileURL = directoryPath.appendingPathComponent(identifier)
+        let fileURL = directoryPath.appendingPathComponent(identifier)
 
-            guard let imageData = image.pngData() else {
-              return nil
-            }
-
-            try imageData.write(to: fileURL)
-              return fileURL
-            } catch {
-              return nil
-          }
+        guard let imageData = image.pngData() else {
+          return nil
         }
+
+        try imageData.write(to: fileURL)
+          return fileURL
+        } catch {
+          return nil
+      }
+    }
     
     private func getMediaAttachment(for urlString: String, completion: @escaping (UIImage?) -> Void) {
         guard let url = URL(string: urlString) else {
@@ -182,6 +160,26 @@ public class MessagingService: MessagingServiceProtocol {
         let img: UIImage = UIImage(data: imageData)!
         
         return completion(img)
+    }
+    
+    private func sendTrackingEventRequest(_ trackingUrl: String?) -> Void {
+        
+        guard let trackingUrl = trackingUrl else {
+            return
+        }
+        
+        guard let url = URL(string: trackingUrl) else {
+            return
+        }
+
+        AF.request(url, method: .get)
+            .validate()
+            .responseJSON { response in
+    
+                guard let data = response.data else {
+                    return
+                }
+            }
     }
     
     func setCategories(newCategory: UNNotificationCategory) async -> Bool {

@@ -20,3 +20,12 @@ We support both Firebase and APNS messaging routes.
 | OrttoPushMessagingFCM | Firebase SDK | Send Push messages via Firebase |
 | OrttoPushMessagingAPNS | APNS SDK | Send push messages directly via APNS |
 
+
+## How to include this library locally 
+[Watch this video](https://www.youtube.com/watch?v=cGtEF6vR3QY)
+
+Basically:
+- Drag the folder into your app package
+- It should show up as a folder with a library icon 
+- Go to App -> Build Phases -> Link Binary With Libraries -> + (ADD)
+- Select the packages you want to include (OrttoPushSDKCore) AND (OrttoPushMessagingFCM OR OrttoPushMessagingAPNS)

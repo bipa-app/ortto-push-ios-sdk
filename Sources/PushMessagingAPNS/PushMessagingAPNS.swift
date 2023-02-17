@@ -23,11 +23,6 @@ protocol PushMessagingAPNSInterface {
      Handle a push notification registration error
      */
     func application(_ application: Any, didFailToRegisterForRemoteNotificationsWithError error: Error)
-        
-    /**
-     Delete the device token from Ortto
-     */
-    func clearDeviceToken()
     
     #if canImport(UserNotifications)
     /**
@@ -54,15 +49,10 @@ public class PushMessagingAPNS: PushMessagingAPNSInterface {
     public func registerDeviceToken(apnsToken: Data) {
         let token = apnsToken.map { String(format: "%02.2hhx", $0) }.joined()
         
-        messaging.registerDeviceToken(token: token, tokenType: "apns")
+        messaging.registerDeviceToken(token: token, tokenType: "apn")
     }
     
-    public func application(_ application: Any, didFailToRegisterForRemoteNotificationsWithError error: Error) {
-        clearDeviceToken()
-    }
-    
-    public func clearDeviceToken() {
-        messaging.clearDeviceToken()
+    public func application(_ application: Any, didFailToRegisterForRemoteNotificationsWithError error: Error) { 
     }
     
     public func didReceive(_ request: UNNotificationRequest, withContentHandler contentHandler: @escaping (UNNotificationContent) -> Void) -> Bool {

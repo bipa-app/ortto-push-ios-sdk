@@ -21,28 +21,30 @@ public extension PushMessaging {
     func userNotificationCenter(_ center: UNUserNotificationCenter, didReceive response: UNNotificationResponse, withCompletionHandler completionHandler: @escaping () -> Void) -> Bool {
         
         let userInfo: [AnyHashable : Any] = response.notification.request.content.userInfo
-        
-        if response.actionIdentifier == UNNotificationDefaultActionIdentifier {
+        let key: String = response.actionIdentifier
+
+        guard let deepLink = userInfo[key] as? String else {
             return false
         }
-    
-        let key: String = response.actionIdentifier
-        let deepLink: String = (userInfo[key] as? String)!
-        let url = URL(string: deepLink)!
+        
+        guard let url = URL(string: deepLink) else {
+            return false;
+        }
         
         if !UIApplication.shared.canOpenURL(url) {
-            print("pls i cannot open url")
             completionHandler()
             return true
         }
-        
-        print("opening: \(url)")
-        
-        UIApplication.shared.open(url, options: [:], completionHandler: nil)
 
+        if #available(iOS 10.0, *) {
+            UIApplication.shared.open(url, options: [:], completionHandler: nil)
+        } else {
+            UIApplication.shared.openURL(url)
+        }
+        
         completionHandler()
     
-        return true;
+        return true
     }
 }
 #endif
