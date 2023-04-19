@@ -7,6 +7,8 @@
 import Foundation
 import Alamofire
 
+let version: String = "1.2"
+
 public protocol OrttoInterface {
     var appKey: String? { get }
     var apiEndpoint: String? { get }
@@ -31,16 +33,16 @@ public class Ortto: OrttoInterface {
     public var permission = PushPermission.Automatic
     internal var skipNonExistingContacts: Bool = false
     
-    private var logger: Logger = PrintLogger()
+    private var logger: OrttoLogger = PrintLogger()
     
     /**
      Overwrite Logging service
      */
-    public func setLogger(customLogger: Logger) {
+    public func setLogger(customLogger: OrttoLogger) {
         self.logger = customLogger
     }
     
-    public static func log() -> Logger {
+    public static func log() -> OrttoLogger {
         return shared.logger
     }
     
@@ -76,6 +78,7 @@ public class Ortto: OrttoInterface {
             guard let sessionID = response?.sessionID else {
                 return
             }
+            self.logger.info("identify.success \(sessionID)")
             
             self.prefsManager.setSessionID(sessionID)
         }
@@ -88,11 +91,16 @@ public class Ortto: OrttoInterface {
         prefsManager.setPermission(permission)
         self.permission = permission;
     }
+    
+    public func getToken() -> String? {
+        return prefsManager.token?.value
+    }
         
     /**
      Send push token to Ortto API
      */
     internal func updatePushToken(token: PushToken, force: Bool = false) {
+        
         // Skip registration of the token if it is the same
         if (token.value == prefsManager.token?.value && !force) {
             Ortto.log().info("Ortto@updatePushToken.skip")
@@ -106,7 +114,7 @@ public class Ortto: OrttoInterface {
            Ortto.log().info("Ortto@updatePushToken.fail id=empty")
            return
        }
-       
+
        // get the latest token, send it off
        apiManager.registerDeviceToken(
            user: id,
@@ -165,9 +173,14 @@ public class Ortto: OrttoInterface {
         let burl = URL(string: "data:application/octet-stream;base64,"+trackingUrl)!
         let data = try! Data(contentsOf: burl)
         let trackingUrlFinal = String(data: data, encoding: .utf8)!
+        
+        var urlComponents = URLComponents(string: trackingUrlFinal)!
+        for item in apiManager.getTrackingQueryItems() {
+            urlComponents.queryItems?.append(item)
+        }
         let utm = LinkUtm(queryItems)
         
-        AF.request(trackingUrlFinal, method: .get)
+        AF.request(urlComponents.url!, method: .get)
             .validate()
             .responseJSON { response in 
                 completion(utm)

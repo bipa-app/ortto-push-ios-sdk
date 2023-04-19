@@ -167,12 +167,13 @@ public class MessagingService: MessagingServiceProtocol {
         guard let trackingUrl = trackingUrl else {
             return
         }
-        
-        guard let url = URL(string: trackingUrl) else {
-            return
+    
+        var urlComponents = URLComponents(string: trackingUrl)!
+        for item in Ortto.shared.apiManager.getTrackingQueryItems() {
+            urlComponents.queryItems?.append(item)
         }
 
-        AF.request(url, method: .get)
+        AF.request(urlComponents.url!, method: .get)
             .validate()
             .responseJSON { response in
     
