@@ -216,12 +216,10 @@ internal class ApiManager: ApiManagerInterface {
         let semaphore = DispatchSemaphore(value: 0)
     
         UNUserNotificationCenter.current().getNotificationSettings { settings in
-            switch settings.authorizationStatus {
-                case .authorized:
-                    result = true;
-                    semaphore.signal()
-                default:
-                    return
+            
+            if (settings.authorizationStatus == .authorized) {
+                result = true;
+                semaphore.signal()
             }
             
             if #available(iOS 15.0, *) {
@@ -230,6 +228,8 @@ internal class ApiManager: ApiManagerInterface {
                     semaphore.signal()
                 }
             }
+            
+            semaphore.signal()
         }
         semaphore.wait()
         return result
