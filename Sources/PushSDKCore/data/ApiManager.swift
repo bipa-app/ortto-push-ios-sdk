@@ -114,8 +114,7 @@ internal class ApiManager: ApiManagerInterface {
             sessionID: sessionID,
             firstName: user.firstName,
             lastName: user.lastName,
-            acceptGDPR: user.acceptsGDPR,
-            skipNonExistingContacts: Ortto.shared.skipNonExistingContacts
+            acceptGDPR: user.acceptsGDPR
         )
         
         let headers: HTTPHeaders = [

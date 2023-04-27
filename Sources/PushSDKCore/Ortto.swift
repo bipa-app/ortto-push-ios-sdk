@@ -31,8 +31,7 @@ public class Ortto: OrttoInterface {
     internal var apiManager = ApiManager()
     internal var prefsManager = PreferencesManager()
     public var permission = PushPermission.Automatic
-    internal var skipNonExistingContacts: Bool = false
-    
+
     private var logger: OrttoLogger = PrintLogger()
     
     /**
@@ -48,7 +47,7 @@ public class Ortto: OrttoInterface {
     
     private init() {}
     
-    public static func initialize(appKey: String, endpoint: String?, skipNonExistingContacts: Bool = false) {
+    public static func initialize(appKey: String, endpoint: String?) {
         if var endpoint = endpoint {
             if endpoint.last == "/" {
                 endpoint = String(endpoint.dropLast())
@@ -57,7 +56,6 @@ public class Ortto: OrttoInterface {
         }
         
         shared.appKey = appKey
-        shared.skipNonExistingContacts = skipNonExistingContacts;
     }
     
     public func clearData() {
