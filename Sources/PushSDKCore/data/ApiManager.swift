@@ -123,7 +123,6 @@ internal class ApiManager: ApiManagerInterface {
             .userAgent(Alamofire.HTTPHeader.defaultUserAgent.value)
         ]
 
-
         AF.request(components.url!, method: .post, parameters: identityRegistration, encoder: JSONParameterEncoder.default, headers: headers)
             .validate()
             .responseJSON { response in
@@ -167,12 +166,15 @@ internal class ApiManager: ApiManagerInterface {
             deviceToken: deviceToken,
             pushTokenType: tokenType
         )
-        debugPrint(tokenRegistration)
         
         let headers: HTTPHeaders = [
             .accept("application/json"),
             .userAgent(Alamofire.HTTPHeader.defaultUserAgent.value)
         ]
+        
+        #if DEBUG
+            debugPrint(tokenRegistration)
+        #endif
 
         AF.request(components.url!, method: .post, parameters: tokenRegistration, encoder: JSONParameterEncoder.default, headers: headers)
             .validate()

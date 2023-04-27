@@ -48,7 +48,6 @@ public class PushMessagingAPNS: PushMessagingAPNSInterface {
     
     public func registerDeviceToken(apnsToken: Data) {
         let token = apnsToken.map { String(format: "%02.2hhx", $0) }.joined()
-        
         messaging.registerDeviceToken(token: token, tokenType: "apn")
     }
     
@@ -58,7 +57,7 @@ public class PushMessagingAPNS: PushMessagingAPNSInterface {
     public func didReceive(_ request: UNNotificationRequest, withContentHandler contentHandler: @escaping (UNNotificationContent) -> Void) -> Bool {
         return messaging.didReceive(request, withContentHandler: contentHandler)
     }
-    
+
     public func serviceExtensionTimeWillExpire() {
         messaging.serviceExtensionTimeWillExpire()
     }

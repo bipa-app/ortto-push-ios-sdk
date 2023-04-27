@@ -147,11 +147,29 @@ public class Ortto: OrttoInterface {
         
         updatePushToken(token: token, force: true)
     }
+    
+    /**
+     * Retrieve the utm_X parameters from the deep link  
+     */
+    public func retrieveUtmParameters(_ encodedUrl: String) -> LinkUtm? {
+        guard let url = URL(string: encodedUrl) else {
+            Ortto.log().error("could not decode tracking_url: \(encodedUrl)")
+            return nil
+        }
+        
+        guard let components = URLComponents(string: url.absoluteString) else { return nil }
+        guard let queryItems = components.queryItems else { return nil }
+
+        let utm = LinkUtm(queryItems)
+        
+        return utm
+    }
 
     /**
      Track the clicking of a link and return the utm values for the developer to use for marketing
      */
-    public func trackLinkClick(_ encodedUrl: String, completion: @escaping (_ utm: LinkUtm) -> Void) {
+    public func trackLinkClick(_ encodedUrl: String, completion: @escaping () -> Void) {
+        
         guard let url = URL(string: encodedUrl) else {
             Ortto.log().error("could not decode tracking_url: \(encodedUrl)")
 
@@ -167,6 +185,7 @@ public class Ortto: OrttoInterface {
         
         guard let trackingUrl = items["tracking_url"] else {
             Ortto.log().error("could not get tracking_url: \(encodedUrl)")
+
             return
         }
         
@@ -178,12 +197,11 @@ public class Ortto: OrttoInterface {
         for item in apiManager.getTrackingQueryItems() {
             urlComponents.queryItems?.append(item)
         }
-        let utm = LinkUtm(queryItems)
         
         AF.request(urlComponents.url!, method: .get)
             .validate()
             .responseJSON { response in 
-                completion(utm)
+                Ortto.log().info("Ortto@trackLinkClick statusCode=\(response.response?.statusCode)")
             }
     }
 }
