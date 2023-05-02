@@ -26,14 +26,14 @@ public extension PushMessaging {
         guard let deepLink = userInfo[key] as? String else {
             return false
         }
-        
+
         guard let url = URL(string: deepLink) else {
             return false;
         }
         
         if !UIApplication.shared.canOpenURL(url) {
             completionHandler()
-            return true
+            return false
         }
 
         if #available(iOS 10.0, *) {
@@ -41,8 +41,10 @@ public extension PushMessaging {
         } else {
             UIApplication.shared.openURL(url)
         }
-        
-        completionHandler()
+
+        Ortto.shared.trackLinkClick(deepLink) {
+            completionHandler()
+        }
     
         return true
     }

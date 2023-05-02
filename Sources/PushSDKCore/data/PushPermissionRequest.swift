@@ -11,7 +11,7 @@ struct PushPermissionRequest: Codable {
     let appKey: String
     let permission: Bool
     let platform: String = "ios"
-    let sessionID: String
+    let sessionID: String?
     let deviceToken: String
     let pushTokenType: String
     

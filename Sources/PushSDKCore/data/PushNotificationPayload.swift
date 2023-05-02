@@ -60,10 +60,17 @@ public class PushNotificationPayload: Codable {
     
     #if canImport(UserNotifications)
     public static func parse(_ content: UNNotificationContent) -> PushNotificationPayload? {
-        let actionsJson = content.userInfo["actions"] as? String
-        let jsonData = actionsJson!.data(using: .utf8)!
-        let actions: [ActionItem] = try! JSONDecoder().decode([ActionItem].self, from: jsonData)
-        
+        let actionsJson = content.userInfo["actions"] as? String ?? "[]"
+        var actions = [ActionItem]()
+
+        if let jsonData = actionsJson.data(using: .utf8) {
+            do {
+                actions = try JSONDecoder().decode([ActionItem].self, from: jsonData)
+            } catch {
+                // Do nothing, json-payload is borked
+            }
+        }
+
         let link = content.userInfo["link"] as? String ?? ""
         let image = content.userInfo["image"] as? String ?? ""
         let eventTrackingUrl = content.userInfo["event_tracking_url"] as? String ?? nil
