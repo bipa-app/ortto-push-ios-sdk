@@ -10,7 +10,7 @@ import Foundation
 import os.log
 #endif
 
-public protocol Logger {
+public protocol OrttoLogger {
     func info(_ message: String)
     func warn(_ message: String)
     func error(_ message: String)
@@ -24,7 +24,7 @@ public enum LogLevel {
     case warning
 }
 
-public class PrintLogger: Logger {
+public class PrintLogger: OrttoLogger {
     private let system = "com.ortto.sdk"
     private let category = "ORTTO"
     

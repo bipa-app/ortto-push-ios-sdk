@@ -37,14 +37,14 @@ public class MessagingService: MessagingServiceProtocol {
     
     internal var deviceManager: ApiManager?
     
-    init() {
-    }
+    init() {}
     
     public func registerDeviceToken(token: String, tokenType: String) {
         Ortto.shared.dispatchPushRequest(PushToken(value: token, type: tokenType))
     }
     
     #if canImport(UserNotifications)
+
     public func didReceive(
         _ request: UNNotificationRequest,
         withContentHandler contentHandler: @escaping (UNNotificationContent) -> Void
@@ -111,6 +111,7 @@ public class MessagingService: MessagingServiceProtocol {
         
         Task.init{
             let handled: Bool = await setCategories(newCategory: category)
+
             contentHandler(content)
         }
     
@@ -163,16 +164,16 @@ public class MessagingService: MessagingServiceProtocol {
     }
     
     private func sendTrackingEventRequest(_ trackingUrl: String?) -> Void {
-        
         guard let trackingUrl = trackingUrl else {
             return
         }
-        
-        guard let url = URL(string: trackingUrl) else {
-            return
+    
+        var urlComponents = URLComponents(string: trackingUrl)!
+        for item in Ortto.shared.apiManager.getTrackingQueryItems() {
+            urlComponents.queryItems?.append(item)
         }
 
-        AF.request(url, method: .get)
+        AF.request(urlComponents.url!, method: .get)
             .validate()
             .responseJSON { response in
     

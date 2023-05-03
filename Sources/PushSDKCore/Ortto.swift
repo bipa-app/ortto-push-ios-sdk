@@ -7,6 +7,8 @@
 import Foundation
 import Alamofire
 
+let version: String = "1.2"
+
 public protocol OrttoInterface {
     var appKey: String? { get }
     var apiEndpoint: String? { get }
@@ -29,24 +31,23 @@ public class Ortto: OrttoInterface {
     internal var apiManager = ApiManager()
     internal var prefsManager = PreferencesManager()
     public var permission = PushPermission.Automatic
-    internal var skipNonExistingContacts: Bool = false
-    
-    private var logger: Logger = PrintLogger()
+
+    private var logger: OrttoLogger = PrintLogger()
     
     /**
      Overwrite Logging service
      */
-    public func setLogger(customLogger: Logger) {
+    public func setLogger(customLogger: OrttoLogger) {
         self.logger = customLogger
     }
     
-    public static func log() -> Logger {
+    public static func log() -> OrttoLogger {
         return shared.logger
     }
     
     private init() {}
     
-    public static func initialize(appKey: String, endpoint: String?, skipNonExistingContacts: Bool = false) {
+    public static func initialize(appKey: String, endpoint: String?) {
         if var endpoint = endpoint {
             if endpoint.last == "/" {
                 endpoint = String(endpoint.dropLast())
@@ -55,7 +56,6 @@ public class Ortto: OrttoInterface {
         }
         
         shared.appKey = appKey
-        shared.skipNonExistingContacts = skipNonExistingContacts;
     }
     
     public func clearData() {
@@ -76,6 +76,7 @@ public class Ortto: OrttoInterface {
             guard let sessionID = response?.sessionID else {
                 return
             }
+            self.logger.info("identify.success \(sessionID)")
             
             self.prefsManager.setSessionID(sessionID)
         }
@@ -88,11 +89,16 @@ public class Ortto: OrttoInterface {
         prefsManager.setPermission(permission)
         self.permission = permission;
     }
+    
+    public func getToken() -> String? {
+        return prefsManager.token?.value
+    }
         
     /**
      Send push token to Ortto API
      */
     internal func updatePushToken(token: PushToken, force: Bool = false) {
+        
         // Skip registration of the token if it is the same
         if (token.value == prefsManager.token?.value && !force) {
             Ortto.log().info("Ortto@updatePushToken.skip")
@@ -100,25 +106,18 @@ public class Ortto: OrttoInterface {
         }
 
         prefsManager.setToken(token)
-        
-        // Ensure the user ID is not empty
-        guard let id = identifier else {
-           Ortto.log().info("Ortto@updatePushToken.fail id=empty")
-           return
-       }
-       
-       // get the latest token, send it off
-       apiManager.registerDeviceToken(
-           user: id,
-           sessionID: prefsManager.sessionID,
-           deviceToken: token.value,
-           tokenType: token.type
-       ) { (response: RegistrationResponse?) in
-           guard let sessionID = response?.sessionID else {
-               return
-           }
+
+        // get the latest token, send it off
+        apiManager.registerDeviceToken(
+            sessionID: prefsManager.sessionID,
+            deviceToken: token.value,
+            tokenType: token.type
+        ) { (response: RegistrationResponse?) in
+            guard let sessionID = response?.sessionID else {
+                return
+            }
            
-           self.prefsManager.setSessionID(sessionID)
+            self.prefsManager.setSessionID(sessionID)
         }
     }
         
@@ -139,11 +138,29 @@ public class Ortto: OrttoInterface {
         
         updatePushToken(token: token, force: true)
     }
+    
+    /**
+     * Retrieve the utm_X parameters from the deep link  
+     */
+    public func retrieveUtmParameters(_ encodedUrl: String) -> LinkUtm? {
+        guard let url = URL(string: encodedUrl) else {
+            Ortto.log().error("could not decode tracking_url: \(encodedUrl)")
+            return nil
+        }
+        
+        guard let components = URLComponents(string: url.absoluteString) else { return nil }
+        guard let queryItems = components.queryItems else { return nil }
+
+        let utm = LinkUtm(queryItems)
+        
+        return utm
+    }
 
     /**
      Track the clicking of a link and return the utm values for the developer to use for marketing
      */
-    public func trackLinkClick(_ encodedUrl: String, completion: @escaping (_ utm: LinkUtm) -> Void) {
+    public func trackLinkClick(_ encodedUrl: String, completion: @escaping () -> Void) {
+        
         guard let url = URL(string: encodedUrl) else {
             Ortto.log().error("could not decode tracking_url: \(encodedUrl)")
 
@@ -159,18 +176,23 @@ public class Ortto: OrttoInterface {
         
         guard let trackingUrl = items["tracking_url"] else {
             Ortto.log().error("could not get tracking_url: \(encodedUrl)")
+
             return
         }
         
         let burl = URL(string: "data:application/octet-stream;base64,"+trackingUrl)!
         let data = try! Data(contentsOf: burl)
         let trackingUrlFinal = String(data: data, encoding: .utf8)!
-        let utm = LinkUtm(queryItems)
         
-        AF.request(trackingUrlFinal, method: .get)
+        var urlComponents = URLComponents(string: trackingUrlFinal)!
+        for item in apiManager.getTrackingQueryItems() {
+            urlComponents.queryItems?.append(item)
+        }
+        
+        AF.request(urlComponents.url!, method: .get)
             .validate()
             .responseJSON { response in 
-                completion(utm)
+                Ortto.log().info("Ortto@trackLinkClick statusCode=\(response.response?.statusCode)")
             }
     }
 }
