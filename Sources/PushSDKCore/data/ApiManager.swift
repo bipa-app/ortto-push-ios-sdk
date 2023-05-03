@@ -148,7 +148,7 @@ internal class ApiManager: ApiManagerInterface {
     }
     
     // device token
-    public func registerDeviceToken(user: UserIdentifier, sessionID: String?, deviceToken: String, tokenType: String = "apn", completion: @escaping (RegistrationResponse?) -> Void) {
+    public func registerDeviceToken(sessionID: String?, deviceToken: String, tokenType: String = "apn", completion: @escaping (RegistrationResponse?) -> Void) {
         
         guard let endpoint = Ortto.shared.apiEndpoint else {
             return

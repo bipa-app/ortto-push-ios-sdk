@@ -106,25 +106,18 @@ public class Ortto: OrttoInterface {
         }
 
         prefsManager.setToken(token)
-        
-        // Ensure the user ID is not empty
-        guard let id = identifier else {
-           Ortto.log().info("Ortto@updatePushToken.fail id=empty")
-           return
-       }
 
-       // get the latest token, send it off
-       apiManager.registerDeviceToken(
-           user: id,
-           sessionID: prefsManager.sessionID,
-           deviceToken: token.value,
-           tokenType: token.type
-       ) { (response: RegistrationResponse?) in
-           guard let sessionID = response?.sessionID else {
-               return
-           }
+        // get the latest token, send it off
+        apiManager.registerDeviceToken(
+            sessionID: prefsManager.sessionID,
+            deviceToken: token.value,
+            tokenType: token.type
+        ) { (response: RegistrationResponse?) in
+            guard let sessionID = response?.sessionID else {
+                return
+            }
            
-           self.prefsManager.setSessionID(sessionID)
+            self.prefsManager.setSessionID(sessionID)
         }
     }
         
