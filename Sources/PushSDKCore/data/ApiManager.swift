@@ -12,7 +12,7 @@ public protocol ApiManagerInterface {
     /**
      Register a new device with Orttos API
      */
-    func registerDeviceToken(user: UserIdentifier, sessionID: String?, deviceToken: String, tokenType: String, completion: @escaping (RegistrationResponse?) -> Void)
+    func registerDeviceToken(sessionID: String?, deviceToken: String, tokenType: String, completion: @escaping (RegistrationResponse?) -> Void)
 }
 
 internal class ApiManager: ApiManagerInterface {
