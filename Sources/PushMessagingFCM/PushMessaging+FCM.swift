@@ -22,10 +22,6 @@ extension PushMessaging: PushMessagingFCMInterface {
         PushMessagingFCM.shared.registerDeviceToken(fcmToken: fcmToken)
     }
     
-    public func clearDeviceToken() {
-        PushMessagingFCM.shared.clearDeviceToken()
-    }
-    
     public func messaging(_ messaging: Any, didReceiveRegistrationToken fcmToken: String?) {
         PushMessagingFCM.shared.messaging(messaging, didReceiveRegistrationToken: fcmToken)
     }

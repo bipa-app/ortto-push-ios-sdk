@@ -13,8 +13,6 @@ import UIKit
 
 public protocol PushMessagingInterface {
     func registerDeviceToken(_ deviceToken: String)
-    
-    func clearDeviceToken()
 
     #if canImport(UserNotifications)
     @discardableResult

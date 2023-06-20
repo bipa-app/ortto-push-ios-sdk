@@ -31,11 +31,6 @@ public protocol PushMessagingFCMInterface {
      */
     func application(_ application: Any, didFailToRegisterForRemoteNotificationsWithError error: Error)
     
-    /**
-     Delete the device token from Ortto
-     */
-    func clearDeviceToken()
-    
     #if canImport(UserNotifications)
     /**
         Handle an incoming push notification from the background APNS service
@@ -75,13 +70,7 @@ public class PushMessagingFCM: PushMessagingFCMInterface {
         registerDeviceToken(fcmToken: deviceToken)
     }
     
-    public func clearDeviceToken() {
-        messaging.clearDeviceToken()
-    }
-    
     public func application(_ application: Any, didFailToRegisterForRemoteNotificationsWithError error: Error) {
-        // note: is this supposed to actually clear?
-        clearDeviceToken()
     }
 
     #if canImport(UserNotifications)

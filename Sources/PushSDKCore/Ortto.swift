@@ -7,7 +7,7 @@
 import Foundation
 import Alamofire
 
-let version: String = "1.2.1"
+let version: String = "1.2.2"
 
 public protocol OrttoInterface {
     var appKey: String? { get }
