@@ -158,7 +158,7 @@ public class Ortto: OrttoInterface {
     /**
      Track the clicking of a link and return the utm values for the developer to use for marketing
      */
-    public func trackLinkClick(_ encodedUrl: String) throws {
+    public func trackLinkClick(_ encodedUrl: String, completionHandler: @escaping () -> Void) throws {
         guard let url = URL(string: encodedUrl) else {
             Ortto.log().error("could not decode tracking_url: \(encodedUrl)")
 
@@ -203,6 +203,10 @@ public class Ortto: OrttoInterface {
                 .validate()
                 .responseJSON { response in
                     Ortto.log().info("Ortto@trackLinkClick statusCode=\(response.response?.statusCode)")
+
+                    if response.response?.statusCode == 200 {
+                        completionHandler()
+                    }
                 }
         }
     }
