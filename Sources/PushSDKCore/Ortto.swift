@@ -178,20 +178,33 @@ public class Ortto: OrttoInterface {
             return
         }
 
-        let burl = URL(string: "data:application/octet-stream;base64," + urlSafeBase64(trackingUrl))!
-        let data = try! Data(contentsOf: burl)
-        let trackingUrlFinal = String(data: data, encoding: .utf8)!
+        let urlStr = "data:application/octet-stream;base64," + urlSafeBase64(trackingUrl)
 
-        var urlComponents = URLComponents(string: trackingUrlFinal)!
+        guard let burl = URL(string: urlStr) else {
+            Ortto.log().error("could not get url: \(urlStr)")
+            return
+        }
+        let data = try Data(contentsOf: burl)
+        guard let trackingUrlFinal = String(data: data, encoding: .utf8) else {
+            Ortto.log().error("could not get trackingUrlFinal: \(urlStr)")
+            return
+        }
+
+        guard var urlComponents = URLComponents(string: trackingUrlFinal) else {
+            Ortto.log().error("could not get urlComponents: \(trackingUrlFinal)")
+            return
+        }
         for item in apiManager.getTrackingQueryItems() {
             urlComponents.queryItems?.append(item)
         }
 
-        AF.request(urlComponents.url!, method: .get)
-            .validate()
-            .responseJSON { response in
-                Ortto.log().info("Ortto@trackLinkClick statusCode=\(response.response?.statusCode)")
-            }
+        if let url = urlComponents.url {
+            AF.request(urlComponents.url!, method: .get)
+                .validate()
+                .responseJSON { response in
+                    Ortto.log().info("Ortto@trackLinkClick statusCode=\(response.response?.statusCode)")
+                }
+        }
     }
 
     private func urlSafeBase64(_ url: String) -> String {
